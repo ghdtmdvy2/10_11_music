@@ -7,6 +7,7 @@ import com.ll.exam.app__2022_10_11.app.member.service.MemberService;
 import com.ll.exam.app__2022_10_11.app.order.entity.Order;
 import com.ll.exam.app__2022_10_11.app.order.exception.ActorCanNotPayOrderException;
 import com.ll.exam.app__2022_10_11.app.order.exception.OrderIdNotMatchedException;
+import com.ll.exam.app__2022_10_11.app.order.exception.OrderNotEnoughRestCashException;
 import com.ll.exam.app__2022_10_11.app.order.service.OrderService;
 import com.ll.exam.app__2022_10_11.app.security.dto.MemberContext;
 import com.ll.exam.app__2022_10_11.exception.ActorCanNotSeeOrderException;
@@ -74,7 +75,8 @@ public class OrderController {
             @RequestParam String paymentKey,
             @RequestParam String orderId,
             @RequestParam Long amount,
-            Model model
+            Model model,
+            @AuthenticationPrincipal MemberContext memberContext
     ) throws Exception {
 
         Order order = orderService.findForPrintById(id).get();
@@ -92,8 +94,19 @@ public class OrderController {
 
         Map<String, String> payloadMap = new HashMap<>();
         payloadMap.put("orderId", orderId);
-        // 백엔드 단에서 가격을 체크하여 문제(변조)가 없는치 체크하는 부분
-        payloadMap.put("amount", String.valueOf(order.calculatePayPrice()));
+        payloadMap.put("amount", String.valueOf(amount));
+
+        // 이 부분이 토스페이먼츠 + 예치금으로 결제 했을 떄의 check 하는 부분이다.
+        Member actor = memberContext.getMember();
+        // 유저의 남은 돈(예치금)을 찾아봄
+        long restCash = memberService.getRestCash(actor);
+        // 사용할 예치금.
+        long payPriceRestCash = order.calculatePayPrice() - amount;
+
+        // 사용할 예치금보다 가지고 있는 예치금이 작을 경우
+        if (payPriceRestCash > restCash) {
+            throw new OrderNotEnoughRestCashException();
+        }
 
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(payloadMap), headers);
 
@@ -101,7 +114,7 @@ public class OrderController {
                 "https://api.tosspayments.com/v1/payments/" + paymentKey, request, JsonNode.class);
 
         if (responseEntity.getStatusCode() == HttpStatus.OK) {
-            orderService.payByTossPayments(order);
+            orderService.payByTossPayments(order, payPriceRestCash);
 
             return "redirect:/order/%d?msg=%s".formatted(order.getId(), Ut.url.encode("결제가 완료되었습니다."));
         } else {
