@@ -20,10 +20,37 @@
         const tossPayments = TossPayments("test_ck_OyL0qZ4G1VOEJZvgGKw8oWb2MQYg");
 
         function payment() {
+            const $PaymentForm__useRestCash = $("#PaymentForm__useRestCash");
+
+            // 적은 금액을 불러오는 것. ( == input 값을 불러오는 것 )
+            let useRestCash = parseInt($PaymentForm__useRestCash.val());
+            alert(useRestCash);
+            if ( useRestCash == NaN ) {
+                useRestCash = 0;
+            }
+
+            const minUseRestCash = parseInt($PaymentForm__useRestCash.attr('min'));
+
+            // max 의 변수 값을 불러오는 것.
+            const maxUseRestCash = parseInt($PaymentForm__useRestCash.attr('max'));
+            alert(maxUseRestCash);
+            // 만약에 주문 금액보다 max 의 금액보다 클 경우 ( ex) 4800원이 주문 금액인데 10000원을 금액을 썼을 경우 )
+            if ( useRestCash > maxUseRestCash ) {
+                // useRestCash 의 값을 maxUseRestCash 만듦. ( 주문 계산을 위해서 )
+                useRestCash = maxUseRestCash;
+                // input 의 값을 주문 금액으로 바꾸게 만듦.
+                $PaymentForm__useRestCash.val(maxUseRestCash);
+            }
+
+            // 주문금액이랑 예치금이 같다면 토스페이먼츠로 결제하지 말고, 예치금으로 결제.
+            if ( orderPayPrice == useRestCash ) {
+                document.payByRestCashOnlyForm.submit();
+                return;
+            }
             const method = "카드"; // "카드" 혹은 "가상계좌"
 
             const paymentData = {
-                amount: orderPayPrice,
+                amount: orderPayPrice - useRestCash,
                 orderId: "order__" + orderId + "__" + (Math.random() + "").substring(2),
                 orderName,
                 customerName: buyerName,
@@ -35,6 +62,9 @@
         }
     </script>
 
+    <form hidden name="payByRestCashOnlyForm" method="POST" th:action="@{|/order/${order.id}/payByRestCashOnly|}">
+
+    </form>
 
     <section class="section section-write container mx-auto">
 
@@ -69,8 +99,17 @@
                 </div>
 
                 <div>
-                    <button onclick="payment();" class="btn btn-sm btn-primary">카드결제</button>
+                    보유 예치금 : [[${actorRestCash}]]
                 </div>
+                <div>
+                    <!--
+                         ${order.calculatePayPrice > actorRestCash ? actorRestCash : order.calculatePayPrice} 는 주문가격과 예치금을 비교 해주는 연산이다.
+                         비교해서 값이 주문 금액이 크면 남은 예치금을 값이 작으면 모든 주문 금액을 input 값에 넣기
+                    -->
+                    <input type="number" id="PaymentForm__useRestCash" placeholder="사용할 예치금" class="input input-bordered min-w-[300px]" min="0" th:max="${order.calculatePayPrice > actorRestCash ? actorRestCash : order.calculatePayPrice}">
+                </div>
+                <button th:if="${order.payable}" onclick="payment();" class="btn btn-sm btn-primary">카드결제</button>
+                <span th:if="${order.isPaid}">결제완료</span>
             </div>
         </div>
     </section>
