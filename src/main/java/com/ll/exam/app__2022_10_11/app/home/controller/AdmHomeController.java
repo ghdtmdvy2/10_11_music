@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("adm")
+@RequestMapping("/adm")
 public class AdmHomeController {
     @GetMapping("")
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -14,7 +14,7 @@ public class AdmHomeController {
         return "redirect:/adm/home/main";
     }
 
-    @GetMapping("home/main")
+    @GetMapping("/home/main")
     @PreAuthorize("hasAuthority('ADMIN')")
     public String showMain() {
         return "adm/home/main";
