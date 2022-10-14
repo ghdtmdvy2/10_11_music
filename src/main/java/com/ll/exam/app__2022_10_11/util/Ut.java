@@ -13,11 +13,11 @@ import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Ut {
-
     public static class date {
         public static int getEndDayOf(int year, int month) {
             String yearMonth = year + "-" + "%02d".formatted(month);
@@ -41,6 +41,7 @@ public class Ut {
             return parse("yyyy-MM-dd HH:mm:ss.SSSSSS", dateText);
         }
     }
+
     private static ObjectMapper getObjectMapper() {
         return (ObjectMapper) AppConfig.getContext().getBean("objectMapper");
     }
@@ -119,6 +120,10 @@ public class Ut {
                 url += "?";
             }
 
+            if ( url.endsWith("?") == false && url.endsWith("&") == false ) {
+                url += "&";
+            }
+
             url += paramName + "=" + encode(paramValue);
 
             return url;
@@ -153,6 +158,24 @@ public class Ut {
                 return str;
             }
         }
+
+        public static String getQueryParamValue(String url, String paramName, String defaultValue) {
+            String[] urlBits = url.split("\\?", 2);
+
+            if (urlBits.length == 1) {
+                return defaultValue;
+            }
+
+            urlBits = urlBits[1].split("&");
+
+            String param = Arrays.stream(urlBits)
+                    .filter(s -> s.startsWith(paramName + "="))
+                    .findAny()
+                    .orElse(paramName + "=" + defaultValue);
+
+            String value = param.split("=", 2)[1].trim();
+
+            return value.length() > 0 ? value : defaultValue;
+        }
     }
 }
-
