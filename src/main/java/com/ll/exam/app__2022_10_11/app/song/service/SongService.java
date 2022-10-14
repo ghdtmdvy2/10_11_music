@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -26,7 +27,9 @@ public class SongService {
 
         return song;
     }
-
+    public List<Song> findAllByAuthorId(Long id) {
+        return songRepository.findAllByAuthorId(id);
+    }
     public Optional<Song> findById(long songId) {
         return songRepository.findById(songId);
     }
