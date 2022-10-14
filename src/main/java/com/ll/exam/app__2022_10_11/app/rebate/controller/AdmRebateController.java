@@ -1,5 +1,6 @@
 package com.ll.exam.app__2022_10_11.app.rebate.controller;
 
+import com.ll.exam.app__2022_10_11.app.base.dto.RsData;
 import com.ll.exam.app__2022_10_11.app.rebate.entity.RebateOrderItem;
 import com.ll.exam.app__2022_10_11.app.rebate.service.RebateService;
 import com.ll.exam.app__2022_10_11.util.Ut;
@@ -7,9 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,6 +44,15 @@ public class AdmRebateController {
         model.addAttribute("items", items);
 
         return "adm/rebate/rebateOrderItemList";
+    }
+
+    @PostMapping("/rebateOne/{orderItemId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseBody
+    public String rebateOne(@PathVariable long orderItemId) {
+        RsData rebateRsData = rebateService.rebate(orderItemId);
+
+        return rebateRsData.getMsg();
     }
 }
 

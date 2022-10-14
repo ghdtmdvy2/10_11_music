@@ -53,7 +53,7 @@ public class RebateOrderItem extends BaseEntity {
     @ToString.Exclude
     @JoinColumn(foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private CashLog rebateCashLog; // 정산에 관련된 환급지급내역
-
+    private LocalDateTime rebateDate;
     // 상품
     private String productSubject;
 
@@ -102,19 +102,26 @@ public class RebateOrderItem extends BaseEntity {
         sellerName = orderItem.getProduct().getAuthor().getName();
     }
 
+    // 정산하지 못하면 정산 값을 0을 반환.
+
     public int calculateRebatePrice() {
-        if ( isRebateAvailable() == false ) {
+        if (refundPrice > 0) {
             return 0;
         }
 
         return payPrice - pgFee - wholesalePrice;
     }
-
+    // 환불이 되었으면 정산을 하지 않는 함수.
     public boolean isRebateAvailable() {
-        if ( refundPrice > 0 ) {
+        if (refundPrice > 0 || rebateDate != null) {
             return false;
         }
 
         return true;
+    }
+
+    public void setRebateDone(long cashLogId) {
+        rebateDate = LocalDateTime.now();
+        this.rebateCashLog = new CashLog(cashLogId);
     }
 }
